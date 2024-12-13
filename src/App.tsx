@@ -1,30 +1,53 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./App.css"; // Подключаем кастомный CSS для стиля
+import "./App.css";
+import Pause from "./Pause";
+import PauseControls from "./PauseControls";
+import ModeSwitcher from "./ModeSwitcher";
+import TimeControl from "./TimeControl";
+import PowerControl from "./PowerControl";
+import BrewStatus from "./BrewStatus";
+import PumpControl from "./PumpControl";
+import SSRControl from "./SSRControl";
+import TemperatureSensor from "./TemperatureSensor";
 
-const App = () => {
-  const [temperature, setTemperature] = useState({
+interface TemperatureState {
+  sensor1_address: string;
+  sensor1_temp: string;
+  sensor2_address: string;
+  sensor2_temp: string;
+}
+
+const App: React.FC = () => {
+  const [temperature, setTemperature] = useState<TemperatureState>({
     sensor1_address: "",
     sensor1_temp: "0",
     sensor2_address: "",
     sensor2_temp: "0",
   });
+
   const [pumpState, setPumpState] = useState({ enabled: false, pwm: 0 });
   const [ssrState, setSsrState] = useState({ enabled: false, pwm: 0 });
-  const [connectionStatus, setConnectionStatus] = useState("Disconnected");
+  const [connectionStatus, setConnectionStatus] =
+    useState<string>("Disconnected");
+  const [pauseCount, setPauseCount] = useState<number>(1);
+  const [isAutomatic, setIsAutomatic] = useState<boolean>(true);
+  const [time, setTime] = useState<number>(19);
+  const [power, setPower] = useState<number>(51);
+  const [brewStatus, setBrewStatus] = useState<string>("Ожидание, ошибок нет");
 
-  const wsRef = useRef(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Подключение к WebSocket
     const ws = new WebSocket("ws://192.168.50.201:81/");
     wsRef.current = ws;
 
-    ws.onopen = () => {
-      setConnectionStatus("Connected");
-    };
+    ws.onopen = () => setConnectionStatus("Connected");
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      if (data.operation_mode !== undefined) {
+        setIsAutomatic(data.operation_mode === "automatic");
+      }
       if (data.sensor1_temp !== undefined && data.sensor2_temp !== undefined) {
         setTemperature({
           sensor1_address: data.sensor1_address || "",
@@ -45,22 +68,18 @@ const App = () => {
           pwm: data.ssr_pwm,
         });
       }
+      if (data.brew_status !== undefined) {
+        setBrewStatus(data.brew_status || "Ожидание, ошибок нет");
+      }
     };
 
-    ws.onclose = () => {
-      setConnectionStatus("Disconnected");
-    };
+    ws.onclose = () => setConnectionStatus("Disconnected");
+    ws.onerror = (error) => console.error("WebSocket error:", error);
 
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    return () => {
-      ws.close();
-    };
+    return () => ws.close();
   }, []);
 
-  const sendMessage = (message) => {
+  const sendMessage = (message: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(message);
     } else {
@@ -68,92 +87,111 @@ const App = () => {
     }
   };
 
-  const togglePump = () => {
-    sendMessage("TOGGLE_PUMP");
+  const handleModeChange = () => {
+    const newMode = isAutomatic ? "manual" : "automatic";
+    sendMessage(`SET_MODE:${newMode}`);
+    setIsAutomatic(!isAutomatic); // Локальное обновление
   };
 
-  const setPumpPWM = (pwm) => {
-    sendMessage(`SET_PWM:${pwm}`);
+  const handleStart = () => {
+    sendMessage("START_PROCESS");
+    setBrewStatus("Процесс запущен");
   };
 
-  const toggleSSR = () => {
-    sendMessage("TOGGLE_SSR");
+  const handlePause = () => {
+    sendMessage("PAUSE_PROCESS");
+    setBrewStatus("Процесс приостановлен");
   };
 
-  const setSSRPWM = (pwm) => {
-    sendMessage(`SET_SSR_PWM:${pwm}`);
+  const handleStop = () => {
+    sendMessage("STOP_PROCESS");
+    setBrewStatus("Процесс остановлен");
   };
 
   return (
-    <div className="app-container">
-      <h1>Управление насосом и SSR</h1>
-      <p className="status">
+    <div className='app-container'>
+      <h1>Управление системой</h1>
+      <p className='status'>
         Статус подключения: <strong>{connectionStatus}</strong>
       </p>
 
-      <div className="section temperature">
+      <div className='section temperature'>
         <h2>Мониторинг температуры</h2>
-        <div className="row">
-          <span>Датчик 1:</span>
-          <span>
-            {temperature.sensor1_temp !== null
-              ? `${temperature.sensor1_temp} °C`
-              : "Загрузка..."}
-          </span>
-        </div>
-        <div className="row">
-          <span>Датчик 2:</span>
-          <span>
-            {temperature.sensor2_temp !== null
-              ? `${temperature.sensor2_temp} °C`
-              : "Загрузка..."}
-          </span>
-        </div>
+        <TemperatureSensor
+          label='Датчик 1'
+          temperature={temperature.sensor1_temp}
+          address={temperature.sensor1_address}
+        />
+        <TemperatureSensor
+          label='Датчик 2'
+          temperature={temperature.sensor2_temp}
+          address={temperature.sensor2_address}
+        />
       </div>
 
-      <div className="section control">
-        <h2>Управление насосом</h2>
-        <div className="row">
-          <span>Состояние:</span>
-          <span>{pumpState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
-        </div>
-        <div className="row">
-          <span>Мощность:</span>
-          <span>{pumpState.pwm}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={pumpState.pwm}
-          onChange={(e) => setPumpPWM(Number(e.target.value))}
-        />
-        <button onClick={togglePump} className="toggle-button">
-          {pumpState.enabled ? "Выключить насос" : "Включить насос"}
+      <ModeSwitcher
+        isAutomatic={isAutomatic}
+        setIsAutomatic={handleModeChange}
+      />
+
+      {isAutomatic && (
+        <>
+          <PauseControls
+            pauseCount={pauseCount}
+            setPauseCount={setPauseCount}
+            sendMessage={sendMessage}
+          />
+          {[...Array(pauseCount)].map((_, index) => (
+            <Pause
+              key={index}
+              index={index + 1}
+              sendMessage={sendMessage}
+            />
+          ))}
+        </>
+      )}
+
+      <TimeControl
+        time={time}
+        setTime={setTime}
+      />
+      <PowerControl
+        power={power}
+        setPower={setPower}
+      />
+      <BrewStatus status={brewStatus} />
+
+      <PumpControl
+        pumpState={pumpState}
+        setPumpPWM={(pwm: number) => sendMessage(`SET_PWM:${pwm}`)}
+        togglePump={() => sendMessage("TOGGLE_PUMP")}
+      />
+
+      <SSRControl
+        ssrState={ssrState}
+        setSSRPWM={(pwm: number) => sendMessage(`SET_SSR_PWM:${pwm}`)}
+        toggleSSR={() => sendMessage("TOGGLE_SSR")}
+      />
+
+      <div className='section controls'>
+        <h2>Управление процессом</h2>
+        <button
+          className='control-button start'
+          onClick={handleStart}
+        >
+          Старт
         </button>
-      </div>
-
-      <div className="section control">
-        <h2>Управление SSR</h2>
-        <div className="row">
-          <span>Состояние:</span>
-          <span>{ssrState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
-        </div>
-        <div className="row">
-          <span>Мощность:</span>
-          <span>{ssrState.pwm}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={ssrState.pwm}
-          onChange={(e) => setSSRPWM(Number(e.target.value))}
-        />
-        <button onClick={toggleSSR} className="toggle-button">
-          {ssrState.enabled ? "Выключить SSR" : "Включить SSR"}
+        <button
+          className='control-button pause'
+          onClick={handlePause}
+        >
+          Пауза
+        </button>
+        <button
+          className='control-button stop'
+          onClick={handleStop}
+        >
+          Стоп
         </button>
       </div>
     </div>

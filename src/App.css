@@ -40,3 +40,36 @@
 .read-the-docs {
   color: #888;
 }
+
+.section.controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.control-button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+}
+
+.control-button.start {
+  background-color: #4caf50;
+  color: white;
+}
+
+.control-button.pause {
+  background-color: #ffa500;
+  color: white;
+}
+
+.control-button.stop {
+  background-color: #f44336;
+  color: white;
+}
+
+.control-button:hover {
+  opacity: 0.9;
+}
