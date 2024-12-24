@@ -1,39 +1,28 @@
 import React from "react";
+import useStore from "./store/store";
 
-interface PauseControlsProps {
-  pauseCount: number;
-  setPauseCount: React.Dispatch<React.SetStateAction<number>>;
-  sendMessage: (message: string) => void; // Функция для отправки данных на сервер
-}
-
-const PauseControls: React.FC<PauseControlsProps> = ({
-  pauseCount,
-  setPauseCount,
-  sendMessage,
-}) => {
-  const handleIncrease = () => {
-    setPauseCount((prev) => {
-      const newCount = Math.min(prev + 1, 10);
-      sendMessage(`SET_PAUSE_COUNT:${newCount}`); // Отправляем новое количество пауз
-      return newCount;
-    });
-  };
-
-  const handleDecrease = () => {
-    setPauseCount((prev) => {
-      const newCount = Math.max(prev - 1, 1);
-      sendMessage(`SET_PAUSE_COUNT:${newCount}`); // Отправляем новое количество пауз
-      return newCount;
-    });
-  };
+const PauseControls: React.FC = () => {
+  const pauses = useStore((state) => state.pauses);
+  const addPause = useStore((state) => state.addPause);
+  const removePause = useStore((state) => state.removePause);
 
   return (
-    <div>
-      <h2>Количество пауз</h2>
-      <div>
-        <button onClick={handleDecrease}>-</button>
-        <span>{pauseCount}</span>
-        <button onClick={handleIncrease}>+</button>
+    <div className="pause-controls">
+      <h2>Управление паузами</h2>
+      <div className="controls">
+        <button
+          onClick={() => removePause(pauses.length - 1)}
+          disabled={pauses.length <= 1}
+        >
+          Уменьшить паузы
+        </button>
+        <span>{pauses.length}</span>
+        <button
+          onClick={() => addPause({ temperature: 50, hysteresis: 3, time: 10 })}
+          disabled={pauses.length >= 10}
+        >
+          Добавить паузу
+        </button>
       </div>
     </div>
   );

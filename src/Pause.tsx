@@ -1,55 +1,47 @@
-import React, { useState } from "react";
+import React from "react";
+import useStore from "./store/store";
 
 interface PauseProps {
   index: number;
-  sendMessage: (message: string) => void; // Функция для отправки данных на сервер
 }
 
-const Pause: React.FC<PauseProps> = ({ index, sendMessage }) => {
-  const [temperature, setTemperature] = useState<number>(50);
-  const [hysteresis, setHysteresis] = useState<number>(3);
-  const [time, setTime] = useState<number>(10);
+const Pause: React.FC<PauseProps> = ({ index }) => {
+  const pause = useStore((state) => state.pauses[index]);
+  const updatePause = useStore((state) => state.updatePause);
 
-  const handleUpdate = () => {
-    // Формируем сообщение с данными о конкретной паузе
-    const message = `UPDATE_PAUSE:${index}:${temperature}:${hysteresis}:${time}`;
-    sendMessage(message);
+  if (!pause) {
+    return <div>Пауза не найдена</div>;
+  }
+
+  const handleUpdate = (key: keyof typeof pause, value: number) => {
+    updatePause(index, { ...pause, [key]: value });
   };
 
   return (
-    <div style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
-      <h3>Пауза {index}</h3>
+    <div className="pause">
+      <h3>Пауза {index + 1}</h3>
       <div>
         <label>Температура:</label>
         <input
-          type='number'
-          value={temperature}
-          onChange={(e) => {
-            setTemperature(Number(e.target.value));
-            handleUpdate(); // Отправляем данные на сервер
-          }}
+          type="number"
+          value={pause.temperature}
+          onChange={(e) => handleUpdate("temperature", Number(e.target.value))}
         />
       </div>
       <div>
         <label>Гистерезис:</label>
         <input
-          type='number'
-          value={hysteresis}
-          onChange={(e) => {
-            setHysteresis(Number(e.target.value));
-            handleUpdate(); // Отправляем данные на сервер
-          }}
+          type="number"
+          value={pause.hysteresis}
+          onChange={(e) => handleUpdate("hysteresis", Number(e.target.value))}
         />
       </div>
       <div>
         <label>Время:</label>
         <input
-          type='number'
-          value={time}
-          onChange={(e) => {
-            setTime(Number(e.target.value));
-            handleUpdate(); // Отправляем данные на сервер
-          }}
+          type="number"
+          value={pause.time}
+          onChange={(e) => handleUpdate("time", Number(e.target.value))}
         />
       </div>
     </div>

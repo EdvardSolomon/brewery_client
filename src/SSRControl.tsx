@@ -1,35 +1,43 @@
 import React from "react";
+import useStore from "./store/store";
 
-interface SSRControlProps {
-  ssrState: { enabled: boolean; pwm: number };
-  setSSRPWM: (pwm: number) => void;
-  toggleSSR: () => void;
-}
+const SSRControl: React.FC = () => {
+  const { ssrState, setSSRState } = useStore((state) => ({
+    ssrState: state.ssrState,
+    setSSRState: state.setSSRState,
+  }));
 
-const SSRControl: React.FC<SSRControlProps> = ({
-  ssrState,
-  setSSRPWM,
-  toggleSSR,
-}) => {
+  const handleToggle = () => {
+    setSSRState((prevState) => ({
+      ...prevState,
+      enabled: !prevState.enabled,
+    }));
+  };
+
+  const handlePWMChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newPWM = Number(event.target.value);
+    setSSRState((prevState) => ({
+      ...prevState,
+      pwm: newPWM,
+    }));
+  };
+
   return (
-    <div className='section control'>
+    <div className="section control">
       <h2>Управление SSR</h2>
-      <div className='row'>
+      <div className="row">
         <span>Состояние:</span>
         <span>{ssrState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
       </div>
       <input
-        type='range'
-        min='0'
-        max='100'
-        step='5'
+        type="range"
+        min="0"
+        max="100"
+        step="5"
         value={ssrState.pwm}
-        onChange={(e) => setSSRPWM(Number(e.target.value))}
+        onChange={handlePWMChange}
       />
-      <button
-        onClick={toggleSSR}
-        className='toggle-button'
-      >
+      <button className="toggle-button" onClick={handleToggle}>
         {ssrState.enabled ? "Выключить SSR" : "Включить SSR"}
       </button>
     </div>

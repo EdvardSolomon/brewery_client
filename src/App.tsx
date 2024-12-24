@@ -1,198 +1,84 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect } from "react";
+import useStore from "./store/store";
+
 import "./App.css";
-import Pause from "./Pause";
-import PauseControls from "./PauseControls";
-import ModeSwitcher from "./ModeSwitcher";
-import TimeControl from "./TimeControl";
-import PowerControl from "./PowerControl";
-import BrewStatus from "./BrewStatus";
-import PumpControl from "./PumpControl";
-import SSRControl from "./SSRControl";
+// import Pause from "./Pause";
+// import PauseControls from "./PauseControls";
+// import ModeSwitcher from "./ModeSwitcher";
+// import BrewStatus from "./BrewStatus";
+// import PumpControl from "./PumpControl";
+// import SSRControl from "./SSRControl";
 import TemperatureSensor from "./TemperatureSensor";
 
-interface TemperatureState {
-  sensor1_address: string;
-  sensor1_temp: string;
-  sensor2_address: string;
-  sensor2_temp: string;
-}
-
 const App: React.FC = () => {
-  const [temperature, setTemperature] = useState<TemperatureState>({
-    sensor1_address: "",
-    sensor1_temp: "0",
-    sensor2_address: "",
-    sensor2_temp: "0",
-  });
+  const { connectionStatus, sensors } = useStore((state) => ({
+    connectionStatus: state.connectionStatus,
+    sensors: state.sensors,
+  }));
 
-  const [pumpState, setPumpState] = useState({ enabled: false, pwm: 0 });
-  const [ssrState, setSsrState] = useState({ enabled: false, pwm: 0 });
-  const [connectionStatus, setConnectionStatus] =
-    useState<string>("Disconnected");
-  const [pauseCount, setPauseCount] = useState<number>(1);
-  const [isAutomatic, setIsAutomatic] = useState<boolean>(true);
-  const [time, setTime] = useState<number>(19);
-  const [power, setPower] = useState<number>(51);
-  const [brewStatus, setBrewStatus] = useState<string>("Ожидание, ошибок нет");
-
-  const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    const ws = new WebSocket("ws://192.168.50.201:81/");
-    wsRef.current = ws;
-
-    ws.onopen = () => setConnectionStatus("Connected");
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.operation_mode !== undefined) {
-        setIsAutomatic(data.operation_mode === "automatic");
-      }
-      if (data.sensor1_temp !== undefined && data.sensor2_temp !== undefined) {
-        setTemperature({
-          sensor1_address: data.sensor1_address || "",
-          sensor1_temp: data.sensor1_temp || "0",
-          sensor2_address: data.sensor2_address || "",
-          sensor2_temp: data.sensor2_temp || "0",
-        });
-      }
-      if (data.pump_enabled !== undefined && data.pump_pwm !== undefined) {
-        setPumpState({
-          enabled: data.pump_enabled,
-          pwm: data.pump_pwm,
-        });
-      }
-      if (data.ssr_enabled !== undefined && data.ssr_pwm !== undefined) {
-        setSsrState({
-          enabled: data.ssr_enabled,
-          pwm: data.ssr_pwm,
-        });
-      }
-      if (data.brew_status !== undefined) {
-        setBrewStatus(data.brew_status || "Ожидание, ошибок нет");
-      }
-    };
-
-    ws.onclose = () => setConnectionStatus("Disconnected");
-    ws.onerror = (error) => console.error("WebSocket error:", error);
-
-    return () => ws.close();
-  }, []);
-
-  const sendMessage = (message: string) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(message);
-    } else {
-      console.error("WebSocket is not connected");
-    }
-  };
-
-  const handleModeChange = () => {
-    const newMode = isAutomatic ? "manual" : "automatic";
-    sendMessage(`SET_MODE:${newMode}`);
-    setIsAutomatic(!isAutomatic); // Локальное обновление
-  };
-
-  const handleStart = () => {
-    sendMessage("START_PROCESS");
-    setBrewStatus("Процесс запущен");
-  };
-
-  const handlePause = () => {
-    sendMessage("PAUSE_PROCESS");
-    setBrewStatus("Процесс приостановлен");
-  };
-
-  const handleStop = () => {
-    sendMessage("STOP_PROCESS");
-    setBrewStatus("Процесс остановлен");
-  };
+  // Синхронизация с сервером при загрузке
+  // useEffect(() => {
+  //   syncWithServer();
+  // }, [syncWithServer]);
 
   return (
-    <div className='app-container'>
+    <div className="app-container">
       <h1>Управление системой</h1>
-      <p className='status'>
-        Статус подключения: <strong>{connectionStatus}</strong>
+      <p className="status">
+        Статус подключения: <strong>{"connectionStatus"}</strong>
       </p>
 
-      <div className='section temperature'>
+      {/* Мониторинг температуры */}
+      <div className="section temperature">
         <h2>Мониторинг температуры</h2>
         <TemperatureSensor
-          label='Датчик 1'
-          temperature={temperature.sensor1_temp}
-          address={temperature.sensor1_address}
+          label="Датчик 1"
+          temperature={"sensors.sensor1_temp"}
+          address={"sensors.sensor1_address"}
         />
         <TemperatureSensor
-          label='Датчик 2'
-          temperature={temperature.sensor2_temp}
-          address={temperature.sensor2_address}
+          label="Датчик 2"
+          temperature={"sensors.sensor2_temp"}
+          address={"sensors.sensor2_address"}
         />
       </div>
 
-      <ModeSwitcher
-        isAutomatic={isAutomatic}
-        setIsAutomatic={handleModeChange}
-      />
+      {/* Переключатель режима работы */}
+      {/* <ModeSwitcher isAutomatic={isAutomatic} setIsAutomatic={toggleMode} /> */}
 
-      {isAutomatic && (
-        <>
-          <PauseControls
-            pauseCount={pauseCount}
-            setPauseCount={setPauseCount}
-            sendMessage={sendMessage}
-          />
-          {[...Array(pauseCount)].map((_, index) => (
-            <Pause
-              key={index}
-              index={index + 1}
-              sendMessage={sendMessage}
-            />
-          ))}
-        </>
-      )}
+      {/* Управление паузами */}
+      {/* {isAutomatic && (
+        <div className="section pauses">
+          <PauseControls />
+          <div className="pause-list">
+            {pauses.map((pause, index) => (
+              <Pause key={index} index={index} />
+            ))}
+          </div>
+        </div>
+      )} */}
 
-      <TimeControl
-        time={time}
-        setTime={setTime}
-      />
-      <PowerControl
-        power={power}
-        setPower={setPower}
-      />
-      <BrewStatus status={brewStatus} />
+      {/* Статус процесса */}
+      {/* <BrewStatus status={brewStatus} /> */}
 
-      <PumpControl
-        pumpState={pumpState}
-        setPumpPWM={(pwm: number) => sendMessage(`SET_PWM:${pwm}`)}
-        togglePump={() => sendMessage("TOGGLE_PUMP")}
-      />
+      {/* Управление насосом */}
+      {/* <PumpControl /> */}
 
-      <SSRControl
-        ssrState={ssrState}
-        setSSRPWM={(pwm: number) => sendMessage(`SET_SSR_PWM:${pwm}`)}
-        toggleSSR={() => sendMessage("TOGGLE_SSR")}
-      />
+      {/* Управление SSR */}
+      {/* <SSRControl /> */}
 
-      <div className='section controls'>
+      {/* Управление процессом */}
+      <div className="section controls">
         <h2>Управление процессом</h2>
-        <button
-          className='control-button start'
-          onClick={handleStart}
-        >
+        {/* <button className="control-button start" onClick={startProcess}>
           Старт
         </button>
-        <button
-          className='control-button pause'
-          onClick={handlePause}
-        >
+        <button className="control-button pause" onClick={pauseProcess}>
           Пауза
         </button>
-        <button
-          className='control-button stop'
-          onClick={handleStop}
-        >
+        <button className="control-button stop" onClick={stopProcess}>
           Стоп
-        </button>
+        </button> */}
       </div>
     </div>
   );

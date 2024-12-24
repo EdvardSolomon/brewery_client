@@ -1,35 +1,43 @@
 import React from "react";
+import useStore from "./store/store";
 
-interface PumpControlProps {
-  pumpState: { enabled: boolean; pwm: number };
-  setPumpPWM: (pwm: number) => void;
-  togglePump: () => void;
-}
+const PumpControl: React.FC = () => {
+  const { pumpState, setPumpState } = useStore((state) => ({
+    pumpState: state.pumpState,
+    setPumpState: state.setPumpState,
+  }));
 
-const PumpControl: React.FC<PumpControlProps> = ({
-  pumpState,
-  setPumpPWM,
-  togglePump,
-}) => {
+  const handleToggle = () => {
+    setPumpState((prevState) => ({
+      ...prevState,
+      enabled: !prevState.enabled,
+    }));
+  };
+
+  const handlePWMChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newPWM = Number(event.target.value);
+    setPumpState((prevState) => ({
+      ...prevState,
+      pwm: newPWM,
+    }));
+  };
+
   return (
-    <div className='section control'>
+    <div className="section control">
       <h2>Управление насосом</h2>
-      <div className='row'>
+      <div className="row">
         <span>Состояние:</span>
         <span>{pumpState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
       </div>
       <input
-        type='range'
-        min='0'
-        max='100'
-        step='5'
+        type="range"
+        min="0"
+        max="100"
+        step="5"
         value={pumpState.pwm}
-        onChange={(e) => setPumpPWM(Number(e.target.value))}
+        onChange={handlePWMChange}
       />
-      <button
-        onClick={togglePump}
-        className='toggle-button'
-      >
+      <button className="toggle-button" onClick={handleToggle}>
         {pumpState.enabled ? "Выключить насос" : "Включить насос"}
       </button>
     </div>
