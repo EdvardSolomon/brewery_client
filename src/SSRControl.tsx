@@ -2,10 +2,7 @@ import React from "react";
 import useStore from "./store/store";
 
 const SSRControl: React.FC = () => {
-  const { ssrState, setSSRState } = useStore((state) => ({
-    ssrState: state.ssrState,
-    setSSRState: state.setSSRState,
-  }));
+  const { ssrState, setSSRState } = useStore();
 
   const handleToggle = () => {
     setSSRState((prevState) => ({
@@ -23,21 +20,24 @@ const SSRControl: React.FC = () => {
   };
 
   return (
-    <div className="section control">
+    <div className='section control'>
       <h2>Управление SSR</h2>
-      <div className="row">
+      <div className='row'>
         <span>Состояние:</span>
         <span>{ssrState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
       </div>
       <input
-        type="range"
-        min="0"
-        max="100"
-        step="5"
+        type='range'
+        min='0'
+        max='100'
+        step='5'
         value={ssrState.pwm}
         onChange={handlePWMChange}
       />
-      <button className="toggle-button" onClick={handleToggle}>
+      <button
+        className='toggle-button'
+        onClick={handleToggle}
+      >
         {ssrState.enabled ? "Выключить SSR" : "Включить SSR"}
       </button>
     </div>

@@ -35,12 +35,15 @@ interface AppState {
   // Actions
   setConnectionStatus: (status: string) => void;
   setSensors: (sensors: SensorState) => void;
-  setPumpState: (state: PumpState) => void;
-  setSSRState: (state: SSRState) => void;
+  setPumpState: (state: PumpState | ((prevState: PumpState) => PumpState)) => void;
+  setSSRState: (state: SSRState | ((prevState: SSRState) => SSRState)) => void;
   setBrewStatus: (status: string) => void;
   toggleMode: () => void;
-  syncWithServer: () => void;
-  sendMessage: (message: string) => void;
+  initializeWebSocket: () => void;
+  closeWebSocket: () => void;
+
+  // // syncWithServer: () => void;
+  // sendMessage: (message: string) => void;
 
   startProcess: () => void;
   pauseProcess: () => void;
@@ -52,7 +55,7 @@ interface AppState {
   removePause: (index: number) => void;
 }
 
-const useStore = create<AppState>((set, get) => {
+const useStore = create<AppState>() ((set, get) => {
   let ws: WebSocket | null = null;
 
   const initializeWebSocket = () => {
@@ -64,55 +67,36 @@ const useStore = create<AppState>((set, get) => {
       };
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        try {
+          const data = JSON.parse(event.data);
 
-        if (data.operationMode !== undefined) {
-          set({ isAutomatic: data.operationMode === "automatic" });
-        }
-
-        if (data.sensors) {
-          set((state) => ({
-            sensors: {
-              ...state.sensors,
-              ...data.sensors,
-            },
-          }));
-        }
-
-        if (data.control) {
-          if (data.control.pump_enabled !== undefined) {
+          if (data.sensors) {
             set((state) => ({
-              pumpState: {
-                ...state.pumpState,
-                enabled: data.control.pump_enabled,
-                pwm: data.control.pump_pwm,
-              },
+              sensors: { ...state.sensors, ...data.sensors },
             }));
           }
 
-          if (data.control.ssr_enabled !== undefined) {
+          if (data.pumpState) {
             set((state) => ({
-              ssrState: {
-                ...state.ssrState,
-                enabled: data.control.ssr_enabled,
-                pwm: data.control.ssr_pwm,
-              },
+              pumpState: { ...state.pumpState, ...data.pumpState },
             }));
           }
-        }
 
-        if (data.brew_status !== undefined) {
-          set({ brewStatus: data.brew_status || "Ожидание, ошибок нет" });
-        }
+          if (data.ssrState) {
+            set((state) => ({
+              ssrState: { ...state.ssrState, ...data.ssrState },
+            }));
+          }
 
-        if (data.pauses) {
-          set({
-            pauses: data.pauses.map((pause: any) => ({
-              temperature: pause.temp,
-              hysteresis: pause.hysteresis,
-              time: pause.time,
-            })),
-          });
+          if (data.brewStatus) {
+            set({ brewStatus: data.brewStatus });
+          }
+
+          if (data.pauses) {
+            set({ pauses: data.pauses });
+          }
+        } catch (error) {
+          console.error("Ошибка обработки данных WebSocket:", error);
         }
       };
 
@@ -126,11 +110,10 @@ const useStore = create<AppState>((set, get) => {
     }
   };
 
-  const sendMessageToServer = (message: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(message);
-    } else {
-      console.error("WebSocket is not connected");
+  const closeWebSocket = () => {
+    if (ws) {
+      ws.close();
+      ws = null;
     }
   };
 
@@ -153,33 +136,35 @@ const useStore = create<AppState>((set, get) => {
       set((state) => ({
         sensors: { ...state.sensors, ...sensors },
       })),
-    setPumpState: (state) => {
-      set({ pumpState: state });
-      sendMessageToServer(`SET_PUMP:${state.enabled}:${state.pwm}`);
-    },
-    setSSRState: (state) => {
-      set({ ssrState: state });
-      sendMessageToServer(`SET_SSR:${state.enabled}:${state.pwm}`);
-    },
+    setPumpState: (state: PumpState | ((prevState: PumpState) => PumpState)) =>
+    set((currentState) => ({
+      pumpState:
+        typeof state === "function" ? state(currentState.pumpState) : state,
+    })),
+    setSSRState: (state: SSRState | ((prevState: SSRState) => SSRState)) =>
+    set((currentState) => ({
+      ssrState:
+        typeof state === "function" ? state(currentState.ssrState) : state,
+    })),
     setBrewStatus: (status) => set({ brewStatus: status }),
     setPauses: (pauses) => set({ pauses }),
 
     toggleMode: () => {
       const newMode = !get().isAutomatic;
       set({ isAutomatic: newMode });
-      sendMessageToServer(`SET_MODE:${newMode ? "automatic" : "manual"}`);
+      // sendMessageToServer(`SET_MODE:${newMode ? "automatic" : "manual"}`);
     },
 
     startProcess: () => {
-      sendMessageToServer("START_PROCESS");
+      // sendMessageToServer("START_PROCESS");
       set({ brewStatus: "Процесс запущен" });
     },
     pauseProcess: () => {
-      sendMessageToServer("PAUSE_PROCESS");
+      // sendMessageToServer("PAUSE_PROCESS");
       set({ brewStatus: "Процесс приостановлен" });
     },
     stopProcess: () => {
-      sendMessageToServer("STOP_PROCESS");
+      // sendMessageToServer("STOP_PROCESS");
       set({ brewStatus: "Процесс остановлен" });
     },
 
@@ -187,25 +172,25 @@ const useStore = create<AppState>((set, get) => {
       const pauses = [...get().pauses];
       pauses[index] = updatedPause;
       set({ pauses });
-      sendMessageToServer(
-        `UPDATE_PAUSE:${index}:${updatedPause.temperature}:${updatedPause.hysteresis}:${updatedPause.time}`
-      );
+      // sendMessageToServer(
+      //   `UPDATE_PAUSE:${index}:${updatedPause.temperature}:${updatedPause.hysteresis}:${updatedPause.time}`
+      // );
     },
     addPause: (newPause) => {
       const pauses = [...get().pauses, newPause];
       set({ pauses });
-      sendMessageToServer(
-        `ADD_PAUSE:${newPause.temperature}:${newPause.hysteresis}:${newPause.time}`
-      );
+      // sendMessageToServer(
+      //   `ADD_PAUSE:${newPause.temperature}:${newPause.hysteresis}:${newPause.time}`
+      // );
     },
     removePause: (index) => {
       const pauses = get().pauses.filter((_, i) => i !== index);
       set({ pauses });
-      sendMessageToServer(`REMOVE_PAUSE:${index}`);
+      // sendMessageToServer(`REMOVE_PAUSE:${index}`);
     },
 
-    syncWithServer: initializeWebSocket,
-    sendMessage: sendMessageToServer,
+    initializeWebSocket,
+    closeWebSocket,
   };
 });
 
