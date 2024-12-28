@@ -47,7 +47,7 @@ interface AppState {
   updatePause: (index: number, updatedPause: Pause) => void;
   addPause: (newPause: Pause) => void;
   removePause: (index: number) => void;
-  
+
   updateData:(data) => void;
 }
 
@@ -91,15 +91,12 @@ const useStore = create<AppState>() ((set, get) => {
     },
 
     startProcess: () => {
-      // sendMessageToServer("START_PROCESS");
       set({ brewStatus: "Процесс запущен" });
     },
     pauseProcess: () => {
-      // sendMessageToServer("PAUSE_PROCESS");
       set({ brewStatus: "Процесс приостановлен" });
     },
     stopProcess: () => {
-      // sendMessageToServer("STOP_PROCESS");
       set({ brewStatus: "Процесс остановлен" });
     },
 

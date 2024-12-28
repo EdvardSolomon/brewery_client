@@ -1,23 +1,19 @@
 import React, { createContext, useContext, useEffect, ReactNode } from "react";
 import useStore from "../store/store";
 
-// Определяем тип контекста
 interface WebSocketContextType {
   sendMessage: (data: object) => void;
 }
 
-// Создаём контекст
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 let ws: WebSocket | null = null;
 
-// Провайдер для WebSocket
 export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const updateData = useStore((state) => state.updateData);
 
-  // Функция отправки сообщений
   const sendMessage = (data: object) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
@@ -26,7 +22,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  // Подключение WebSocket
   useEffect(() => {
     if (!ws || ws.readyState === WebSocket.CLOSED) {
       ws = new WebSocket("ws://localhost:8080");
@@ -53,7 +48,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
       };
     }
 
-    // Закрываем соединение при размонтировании
     return () => {
       if (ws) {
         ws.close();
@@ -62,7 +56,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
     };
   }, [updateData]);
 
-  // Возвращаем провайдер с контекстом
   return (
     <WebSocketContext.Provider value={{ sendMessage }}>
       {children}
@@ -70,7 +63,6 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-// Хук для использования контекста
 export const useWebSocketContext = () => {
   const context = useContext(WebSocketContext);
   if (!context) {

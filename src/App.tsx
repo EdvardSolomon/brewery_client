@@ -8,16 +8,10 @@ import PumpControl from "./PumpControl";
 import SSRControl from "./SSRControl";
 import TemperatureSensor from "./TemperatureSensor";
 import PauseManagement from "./PauseManagement";
+import ProcessControls from "./ProcessControls";
 
 const App: React.FC = () => {
-  const {
-    connectionStatus,
-    sensors,
-    brewStatus,
-    startProcess,
-    pauseProcess,
-    stopProcess,
-  } = useStore();
+  const { connectionStatus, sensors, brewStatus } = useStore();
 
   return (
     <div className='app-container'>
@@ -57,27 +51,7 @@ const App: React.FC = () => {
       <BrewStatus status={brewStatus} />
 
       {/* Управление процессом */}
-      <div className='section controls'>
-        <h2>Управление процессом</h2>
-        <button
-          className='control-button start'
-          onClick={startProcess}
-        >
-          Старт
-        </button>
-        <button
-          className='control-button pause'
-          onClick={pauseProcess}
-        >
-          Пауза
-        </button>
-        <button
-          className='control-button stop'
-          onClick={stopProcess}
-        >
-          Стоп
-        </button>
-      </div>
+      <ProcessControls />
     </div>
   );
 };
