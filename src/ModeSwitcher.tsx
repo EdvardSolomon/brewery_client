@@ -1,15 +1,18 @@
 import React from "react";
+import useStore from "./store/store";
+import { useWebSocketContext } from "./hooks/useWebSocket";
 
-interface ModeSwitcherProps {
-  isAutomatic: boolean;
-  setIsAutomatic: React.Dispatch<React.SetStateAction<boolean>>;
-}
+const ModeSwitcher: React.FC = () => {
+  const isAutomatic = useStore((state) => state.isAutomatic);
+  const toggleMode = useStore((state) => state.toggleMode);
+  const { sendMessage } = useWebSocketContext();
 
-const ModeSwitcher: React.FC<ModeSwitcherProps> = ({
-  isAutomatic,
-  setIsAutomatic,
-}) => {
-  const handleClick = () => setIsAutomatic(!isAutomatic);
+  const handleClick = () => {
+    toggleMode();
+
+    const newEnabled = !isAutomatic;
+    sendMessage({ isAutomatic: newEnabled });
+  };
 
   return (
     <div className='mode-switcher'>

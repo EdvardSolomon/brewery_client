@@ -2,22 +2,18 @@ import React from "react";
 import useStore from "./store/store";
 
 import "./App.css";
-import Pause from "./Pause";
-import PauseControls from "./PauseControls";
 import ModeSwitcher from "./ModeSwitcher";
 import BrewStatus from "./BrewStatus";
 import PumpControl from "./PumpControl";
 import SSRControl from "./SSRControl";
 import TemperatureSensor from "./TemperatureSensor";
+import PauseManagement from "./PauseManagement";
 
 const App: React.FC = () => {
   const {
     connectionStatus,
-    pauses,
     sensors,
-    isAutomatic,
     brewStatus,
-    toggleMode,
     startProcess,
     pauseProcess,
     stopProcess,
@@ -46,25 +42,10 @@ const App: React.FC = () => {
       </div>
 
       {/* Переключатель режима работы */}
-      <ModeSwitcher
-        isAutomatic={isAutomatic}
-        setIsAutomatic={toggleMode}
-      />
+      <ModeSwitcher />
 
       {/* Управление паузами */}
-      {isAutomatic && (
-        <div className='section pauses'>
-          <PauseControls />
-          <div className='pause-list'>
-            {pauses.map((pause, index) => (
-              <Pause
-                key={index}
-                index={index}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <PauseManagement />
 
       {/* Управление насосом */}
       <PumpControl />

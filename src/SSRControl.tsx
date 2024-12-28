@@ -1,14 +1,19 @@
 import React from "react";
 import useStore from "./store/store";
+import { useWebSocketContext } from "./hooks/useWebSocket";
 
 const SSRControl: React.FC = () => {
   const { ssrState, setSSRState } = useStore();
+  const { sendMessage } = useWebSocketContext();
 
   const handleToggle = () => {
     setSSRState((prevState) => ({
       ...prevState,
       enabled: !prevState.enabled,
     }));
+
+    const newEnabled = !ssrState.enabled;
+    sendMessage({ ssrState: { ...ssrState, enabled: newEnabled } });
   };
 
   const handlePWMChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,6 +22,8 @@ const SSRControl: React.FC = () => {
       ...prevState,
       pwm: newPWM,
     }));
+
+    sendMessage({ ssrState: { ...ssrState, pwm: newPWM } });
   };
 
   return (

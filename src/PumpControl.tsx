@@ -1,14 +1,19 @@
 import React from "react";
 import useStore from "./store/store";
+import { useWebSocketContext } from "./hooks/useWebSocket";
 
 const PumpControl: React.FC = () => {
   const { pumpState, setPumpState } = useStore();
+  const { sendMessage } = useWebSocketContext();
 
   const handleToggle = () => {
     setPumpState((prevState) => ({
       ...prevState,
       enabled: !prevState.enabled,
     }));
+
+    const newEnabled = !pumpState.enabled;
+    sendMessage({ pumpState: { ...pumpState, enabled: newEnabled } });
   };
 
   const handlePWMChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,6 +22,8 @@ const PumpControl: React.FC = () => {
       ...prevState,
       pwm: newPWM,
     }));
+
+    sendMessage({ pumpState: { ...pumpState, pwm: newPWM } });
   };
 
   return (

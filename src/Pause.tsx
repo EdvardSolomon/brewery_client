@@ -1,5 +1,6 @@
 import React from "react";
 import useStore from "./store/store";
+import { useWebSocketContext } from "./hooks/useWebSocket";
 
 interface PauseProps {
   index: number;
@@ -8,22 +9,30 @@ interface PauseProps {
 const Pause: React.FC<PauseProps> = ({ index }) => {
   const pause = useStore((state) => state.pauses[index]);
   const updatePause = useStore((state) => state.updatePause);
+  const pauses = useStore((state) => state.pauses);
+  const { sendMessage } = useWebSocketContext();
 
   if (!pause) {
     return <div>Пауза не найдена</div>;
   }
 
   const handleUpdate = (key: keyof typeof pause, value: number) => {
-    updatePause(index, { ...pause, [key]: value });
+    const updatedPause = { ...pause, [key]: value };
+    updatePause(index, updatedPause);
+
+    const updatedPauses = pauses.map((p, i) =>
+      i === index ? updatedPause : p
+    );
+    sendMessage({ pauses: updatedPauses });
   };
 
   return (
-    <div className="pause">
+    <div className='pause'>
       <h3>Пауза {index + 1}</h3>
       <div>
         <label>Температура:</label>
         <input
-          type="number"
+          type='number'
           value={pause.temperature}
           onChange={(e) => handleUpdate("temperature", Number(e.target.value))}
         />
@@ -31,7 +40,7 @@ const Pause: React.FC<PauseProps> = ({ index }) => {
       <div>
         <label>Гистерезис:</label>
         <input
-          type="number"
+          type='number'
           value={pause.hysteresis}
           onChange={(e) => handleUpdate("hysteresis", Number(e.target.value))}
         />
@@ -39,7 +48,7 @@ const Pause: React.FC<PauseProps> = ({ index }) => {
       <div>
         <label>Время:</label>
         <input
-          type="number"
+          type='number'
           value={pause.time}
           onChange={(e) => handleUpdate("time", Number(e.target.value))}
         />
