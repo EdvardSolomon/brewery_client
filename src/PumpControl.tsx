@@ -27,24 +27,25 @@ const PumpControl: React.FC = () => {
   };
 
   return (
-    <div className='section control'>
+    <div className="section control">
       <h2>Управление насосом</h2>
-      <div className='row'>
+      <div className="row">
         <span>Состояние:</span>
-        <span>{pumpState.enabled ? "ВКЛ" : "ВЫКЛ"}</span>
+        <span
+          className={`status-indicator ${
+            pumpState.enabled ? "green-square" : "red-square"
+          }`}
+        ></span>
       </div>
       <input
-        type='range'
-        min='0'
-        max='100'
-        step='5'
+        type="range"
+        min="0"
+        max="100"
+        step="5"
         value={pumpState.pwm}
         onChange={handlePWMChange}
       />
-      <button
-        className='toggle-button'
-        onClick={handleToggle}
-      >
+      <button className="toggle-button" onClick={handleToggle}>
         {pumpState.enabled ? "Выключить насос" : "Включить насос"}
       </button>
     </div>

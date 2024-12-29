@@ -31,10 +31,13 @@ interface AppState {
   pauses: Pause[];
   brewStatus: string;
   isAutomatic: boolean;
+  remainingTime: number;
 
   setConnectionStatus: (status: string) => void;
   setSensors: (sensors: SensorState) => void;
-  setPumpState: (state: PumpState | ((prevState: PumpState) => PumpState)) => void;
+  setPumpState: (
+    state: PumpState | ((prevState: PumpState) => PumpState)
+  ) => void;
   setSSRState: (state: SSRState | ((prevState: SSRState) => SSRState)) => void;
   setBrewStatus: (status: string) => void;
   toggleMode: () => void;
@@ -43,16 +46,17 @@ interface AppState {
   pauseProcess: () => void;
   stopProcess: () => void;
 
+  setRemainingTime: (time: number) => void;
+
   setPauses: (pauses: Pause[]) => void;
   updatePause: (index: number, updatedPause: Pause) => void;
   addPause: (newPause: Pause) => void;
   removePause: (index: number) => void;
 
-  updateData:(data) => void;
+  updateData: (data) => void;
 }
 
-const useStore = create<AppState>() ((set, get) => {
-
+const useStore = create<AppState>()((set, get) => {
   return {
     connectionStatus: "Disconnected",
     sensors: {
@@ -66,6 +70,7 @@ const useStore = create<AppState>() ((set, get) => {
     brewStatus: "Ожидание, ошибок нет",
     isAutomatic: true,
     pauses: [],
+    remainingTime: 0,
 
     setConnectionStatus: (status) => set({ connectionStatus: status }),
     setSensors: (sensors) =>
@@ -73,17 +78,18 @@ const useStore = create<AppState>() ((set, get) => {
         sensors: { ...state.sensors, ...sensors },
       })),
     setPumpState: (state: PumpState | ((prevState: PumpState) => PumpState)) =>
-    set((currentState) => ({
-      pumpState:
-        typeof state === "function" ? state(currentState.pumpState) : state,
-    })),
+      set((currentState) => ({
+        pumpState:
+          typeof state === "function" ? state(currentState.pumpState) : state,
+      })),
     setSSRState: (state: SSRState | ((prevState: SSRState) => SSRState)) =>
-    set((currentState) => ({
-      ssrState:
-        typeof state === "function" ? state(currentState.ssrState) : state,
-    })),
+      set((currentState) => ({
+        ssrState:
+          typeof state === "function" ? state(currentState.ssrState) : state,
+      })),
     setBrewStatus: (status) => set({ brewStatus: status }),
     setPauses: (pauses) => set({ pauses }),
+    setRemainingTime: (time) => set({ remainingTime: time }),
 
     toggleMode: () => {
       const newMode = !get().isAutomatic;
@@ -113,9 +119,8 @@ const useStore = create<AppState>() ((set, get) => {
       const pauses = get().pauses.filter((_, i) => i !== index);
       set({ pauses });
     },
-    
-    updateData: (data) => set({ ...data }), 
 
+    updateData: (data) => set({ ...data }),
   };
 });
 

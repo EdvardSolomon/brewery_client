@@ -22,24 +22,15 @@ const ProcessControls: React.FC = () => {
   };
 
   return (
-    <div className='section controls'>
-      <h2>Управление процессом</h2>
-      <button
-        className='control-button start'
-        onClick={start}
-      >
+    <div className="section controls">
+      {/* <h2>Управление процессом</h2> */}
+      <button className="control-button start" onClick={start}>
         Старт
       </button>
-      <button
-        className='control-button pause'
-        onClick={pause}
-      >
+      <button className="control-button pause" onClick={pause}>
         Пауза
       </button>
-      <button
-        className='control-button stop'
-        onClick={stop}
-      >
+      <button className="control-button stop" onClick={stop}>
         Стоп
       </button>
     </div>

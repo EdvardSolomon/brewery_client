@@ -24,7 +24,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     if (!ws || ws.readyState === WebSocket.CLOSED) {
-      ws = new WebSocket("ws://localhost:8080");
+      ws = new WebSocket("ws://192.168.31.167:8080");
 
       ws.onopen = () => {
         console.log("Connected to WebSocket server");
